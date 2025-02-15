@@ -12,9 +12,9 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "sk-proj-ebANtYeFbyssTymmDzlLfcCD-Z
 client = openai.OpenAI(api_key=OPENAI_API_KEY)
 
 # Neo4j Credentials
-NEO4J_URI = "neo4j+s://e502785f.databases.neo4j.io"
+NEO4J_URI = "***********"
 NEO4J_USER = "neo4j"
-NEO4J_PASSWORD = "1PIyCt2xr4v07XGr0txGoxbA7-aLv54Pq2nHkQlg-q8"
+NEO4J_PASSWORD = "***********"
 
 # Initialize Streamlit app
 st.set_page_config(page_title="Neo4j Query Generator", layout="wide")
