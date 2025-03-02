@@ -119,7 +119,7 @@ Title: Amazing Phone, Rating: 4.8
 | Aniketh Reddy Adireddy              | Rohan Sai Maragoni                 | Vamshi Kuruva                             |
 |-------------------------------------|-----------------------------------|-------------------------------------------|
 | [GitHub](https://github.com/Aniketh007)  | [GitHub](https://github.com/RohanSai22) | [GitHub](http://www.github.com/vamshikuruva) |
-| [Email](mailto:anikethadireddy@gmail.com)  | [Email](mailto:maragonirohansai@gmail.com) | [LinkedIn](mailto:kuruvavamshi66@gmail.com) |
+| [Email](mailto:anikethadireddy@gmail.com)  | [Email](mailto:maragonirohansai@gmail.com) | [Email](mailto:kuruvavamshi66@gmail.com) |
 | [LinkedIn](https://www.linkedin.com/in/anikethreddy007/) | [LinkedIn](https://www.linkedin.com/in/rohan-sai-446a02228/) | [LinkedIn](https://www.linkedin.com/in/vamshikuruva/) |
 
 
