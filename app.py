@@ -11,13 +11,15 @@ from neo4j import GraphDatabase
 NEO4J_URI = "neo4j+s://455efffc.databases.neo4j.io"
 NEO4J_USER = "neo4j"
 NEO4J_PASSWORD = "V-KFcjLA38WweEQGCC1u8zDpvPnmnYSMiOdGLV--tgo"
-
+st.session_state.api_key=False
 # Initialize Streamlit app
 st.set_page_config(page_title="Neo4j Query Generator", layout="wide")
 st.title("🔍 Neo4j Query Generator")
 
-api_key=st.text_input("Enter your OpenAI API KEY")
-client = openai.OpenAI(api_key=api_key)
+if not st.session_state.api_key:
+    api_key=st.text_input("Enter your OpenAI API KEY")
+    client = openai.OpenAI(api_key=api_key)
+    st.session_state.api_key=True
 
 class Neo4jClient:
     """Handles Neo4j database connections and queries."""
