@@ -8,17 +8,17 @@ from tqdm import tqdm
 from neo4j import GraphDatabase
 
 # Set OpenAI API Key
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "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")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "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")
 client = openai.OpenAI(api_key=OPENAI_API_KEY)
 
 # Neo4j Credentials
-NEO4J_URI = "***********"
+NEO4J_URI = "neo4j+s://455efffc.databases.neo4j.io"
 NEO4J_USER = "neo4j"
-NEO4J_PASSWORD = "***********"
+NEO4J_PASSWORD = "V-KFcjLA38WweEQGCC1u8zDpvPnmnYSMiOdGLV--tgo"
 
 # Initialize Streamlit app
 st.set_page_config(page_title="Neo4j Query Generator", layout="wide")
-st.title("🔍 Neo4j Query Generator with OpenAI")
+st.title("🔍 Neo4j Query Generator")
 
 class Neo4jClient:
     """Handles Neo4j database connections and queries."""
@@ -40,52 +40,116 @@ neo4j_client = Neo4jClient(NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD)
 
 def generate_cypher_query(user_prompt):
     """Generates a Cypher query from a user prompt using OpenAI."""
-    prompt = f"""
-    Generate a Cypher query to answer the following question based on a graph database of employee reviews:
-    {user_prompt}
+    prompt = """
+    Generate a Cypher query to answer the following question based on a graph database of Airbnb reviews:
+    """ + str(user_prompt) + """
 
-    The graph database has nodes: Review, Rating, Title.
-    The Review node has properties: url, text, rating, details, title.
-    The Rating node has property: rating.
-    The Title node has property: title.
-    The graph database has relationships: RATING_GIVEN, TITLE_ABOUT.
+    The graph database has this EXACT structure:
+    
+    Nodes:
+    1. Review
+       - properties: id, date, comments
+    2. Listing
+       - properties: id
+    3. Reviewer
+       - properties: id, name
 
-    Return only the Cypher query.
+    Relationships:
+    - (Reviewer)-[:WROTE]->(Review)
+    - (Review)-[:ABOUT]->(Listing)
+
+    RULES:
+    1. Return ONLY the Cypher query with NO explanatory text
+    2. Query MUST start with MATCH
+    3. Query MUST include RETURN with aliases
+    4. Use proper relationship directions (->)
+    5. Include LIMIT for large result sets
+
+    EXAMPLE RESPONSES:
+    MATCH (r:Review) RETURN r.date as date, r.comments as comments ORDER BY date DESC LIMIT 5
+
+    MATCH (rv:Reviewer)-[:WROTE]->(r:Review) WHERE rv.name CONTAINS "John" RETURN rv.name as reviewer, r.comments as comments
+
+    MATCH (r:Review)-[:ABOUT]->(l:Listing {id: "2992450"}) RETURN r.date as date, r.comments as comments ORDER BY date DESC
     """
 
     response = client.chat.completions.create(
         model="gpt-3.5-turbo",
-        messages=[{"role": "user", "content": prompt}]
+        messages=[
+            {"role": "system", "content": "You are a Cypher query generator. Return ONLY the query with NO explanation or additional text."},
+            {"role": "user", "content": prompt}
+        ]
     )
 
     cypher_query = response.choices[0].message.content.strip()
 
-    # Ensure query is not empty
-    if not cypher_query:
-        st.error("⚠ OpenAI failed to generate a Cypher query. Please try again.")
+    # Clean up the query
+    def extract_valid_query(query_text):
+        # Split into lines and remove empty ones
+        lines = [line.strip() for line in query_text.split('\n') if line.strip()]
+        
+        # Look for lines starting with valid Cypher keywords
+        valid_starters = ['MATCH', 'RETURN', 'WITH', 'CALL', 'CREATE', 'MERGE']
+        for line in lines:
+            if any(line.upper().startswith(keyword) for keyword in valid_starters):
+                return line
         return None
 
-    return cypher_query
+    # Extract and validate the query
+    cleaned_query = extract_valid_query(cypher_query)
+    
+    if not cleaned_query:
+        st.error("⚠ Could not generate a valid Cypher query. Please try rephrasing your question.")
+        return None
+
+    # Ensure basic query structure
+    if 'RETURN' not in cleaned_query.upper():
+        st.error("⚠ Generated query is missing RETURN clause. Please try again.")
+        return None
+
+    if ' AS ' not in cleaned_query.upper():
+        st.error("⚠ Generated query is missing column aliases. Please try again.")
+        return None
+
+    return cleaned_query
 
 def generate_response(results, user_prompt):
     """Generates a structured response from Neo4j query results using OpenAI."""
     if not results:
         return "No results found.", pd.DataFrame()
 
-    formatted_results = "\n".join(str(record) for record in results)
+    # Convert results to DataFrame first
+    data = []
+    for record in results:
+        # Flatten the record dictionary
+        flat_record = {}
+        for key, value in record.items():
+            if isinstance(value, dict):
+                for k, v in value.items():
+                    flat_record[f"{key}_{k}"] = v
+            else:
+                flat_record[key] = value
+        data.append(flat_record)
+    
+    df = pd.DataFrame(data)
+    
+    # Format the results for GPT
+    formatted_results = df.to_string() if not df.empty else "No results found"
 
-    prompt = f"""
-    Analyze the following Neo4j query results and the user's prompt:
-    User Prompt: '{user_prompt}'
-    Results: {formatted_results}
+    prompt = """
+    Analyze the following Neo4j query results about Airbnb reviews:
+    User Question: '""" + str(user_prompt) + """'
+    Results: """ + formatted_results + """
 
-    The results represent reviews with url, text, rating, details, and title.
+    Please provide:
+    1. A clear, human-readable summary of the findings
+    2. Any interesting patterns or insights in the reviews
+    3. Relevant statistics (if available)
+    4. Suggestions for further analysis
 
-    1. Determine if a visualization (bar graph) is appropriate.
-    2. If a bar graph is appropriate, generate Python code using plotly.express to create the graph.
-    3. The code should extract ratings and titles from the results to create the graph.
-    4. Return the python code for the plot, and then return the formatted results.
-    5. If a visualization is not appropriate, just return the formatted results.
+    If the results include dates, mention any temporal patterns.
+    If the results include reviewer names, mention any patterns in reviewer behavior.
+    If the results include comments, highlight any common themes or notable feedback.
     """
 
     response = client.chat.completions.create(
@@ -95,16 +159,11 @@ def generate_response(results, user_prompt):
 
     analysis = response.choices[0].message.content.strip()
 
-    # Extract ratings and titles safely
-    ratings = [float(record.get('ra', {}).get('rating', 0)) for record in results]
-    titles = [record.get('r', {}).get('title', "Unknown") for record in results]
-
-    df = pd.DataFrame({'Title': titles, 'Rating': ratings})
-
     return analysis, df
 
 # Query Section
 st.subheader("💡 Ask a Question About the Neo4j Graph")
+st.info("A dataset of Airbnb reviews has been loaded into the Neo4j graph database.")
 user_prompt = st.text_input("Enter your question:")
 
 if st.button("🔍 Generate and Run Query"):
@@ -121,8 +180,8 @@ if st.button("🔍 Generate and Run Query"):
             # Format Results using GPT
             if results:
                 formatted_response, df = generate_response(results, user_prompt)
-                st.write("📝 **Formatted Answer:**")
-                st.info(formatted_response)
+                # st.write("📝 **Formatted Answer:**")
+                # st.info(formatted_response)
 
                 if not df.empty:
                     st.write("📋 **Query Results:**")
