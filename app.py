@@ -163,39 +163,40 @@ def generate_response(results, user_prompt):
     return analysis, df
 
 # Query Section
-st.subheader("💡 Ask a Question About the Neo4j Graph")
-st.info("A dataset of Airbnb reviews has been loaded into the Neo4j graph database.")
-user_prompt = st.text_input("Enter your question:")
-
-if st.button("🔍 Generate and Run Query"):
-    if user_prompt:
-        # Generate Cypher Query
-        cypher_query = generate_cypher_query(user_prompt)
-        
-        if cypher_query:
-            st.code(cypher_query, language="cypher")
-
-            # Execute Query
-            results = neo4j_client.run_query(cypher_query)
-
-            # Format Results using GPT
-            if results:
-                formatted_response, df = generate_response(results, user_prompt)
-                # st.write("📝 **Formatted Answer:**")
-                # st.info(formatted_response)
-
-                if not df.empty:
-                    st.write("📋 **Query Results:**")
-                    st.dataframe(df)
-
-                    # Visualization (if applicable)
-                    if "Rating" in df.columns:
-                        st.write("📊 **Generated Visualization:**")
-                        fig = px.bar(df, x="Title", y="Rating", title="Ratings per Title")
-                        st.plotly_chart(fig)
-
-            else:
-                st.warning("⚠ No results found.")
+if st.session_state.api_key:
+    st.subheader("💡 Ask a Question About the Neo4j Graph")
+    st.info("A dataset of Airbnb reviews has been loaded into the Neo4j graph database.")
+    user_prompt = st.text_input("Enter your question:")
+    
+    if st.button("🔍 Generate and Run Query"):
+        if user_prompt:
+            # Generate Cypher Query
+            cypher_query = generate_cypher_query(user_prompt)
+            
+            if cypher_query:
+                st.code(cypher_query, language="cypher")
+    
+                # Execute Query
+                results = neo4j_client.run_query(cypher_query)
+    
+                # Format Results using GPT
+                if results:
+                    formatted_response, df = generate_response(results, user_prompt)
+                    # st.write("📝 **Formatted Answer:**")
+                    # st.info(formatted_response)
+    
+                    if not df.empty:
+                        st.write("📋 **Query Results:**")
+                        st.dataframe(df)
+    
+                        # Visualization (if applicable)
+                        if "Rating" in df.columns:
+                            st.write("📊 **Generated Visualization:**")
+                            fig = px.bar(df, x="Title", y="Rating", title="Ratings per Title")
+                            st.plotly_chart(fig)
+    
+                else:
+                    st.warning("⚠ No results found.")
 
 # Close Neo4j connection
 neo4j_client.close()
