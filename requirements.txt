@@ -3,3 +3,4 @@ tqdm
 plotly
 neo4j
 pandas
+streamlit
