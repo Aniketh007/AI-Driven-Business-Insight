@@ -7,10 +7,6 @@ import plotly.express as px
 from tqdm import tqdm
 from neo4j import GraphDatabase
 
-# Set OpenAI API Key
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "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")
-client = openai.OpenAI(api_key=OPENAI_API_KEY)
-
 # Neo4j Credentials
 NEO4J_URI = "neo4j+s://455efffc.databases.neo4j.io"
 NEO4J_USER = "neo4j"
@@ -19,6 +15,9 @@ NEO4J_PASSWORD = "V-KFcjLA38WweEQGCC1u8zDpvPnmnYSMiOdGLV--tgo"
 # Initialize Streamlit app
 st.set_page_config(page_title="Neo4j Query Generator", layout="wide")
 st.title("🔍 Neo4j Query Generator")
+
+api_key=st.text_input("Enter your OpenAI API KEY")
+client = openai.OpenAI(api_key=api_key)
 
 class Neo4jClient:
     """Handles Neo4j database connections and queries."""
